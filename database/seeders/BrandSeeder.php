@@ -1,9 +1,8 @@
 <?php
 
 namespace Database\Seeders;
-
-use App\Models\Brand;
 use Illuminate\Database\Seeder;
+use App\Infrastructure\Persistence\Eloquent\Models\Brand;
 
 class BrandSeeder extends Seeder
 {

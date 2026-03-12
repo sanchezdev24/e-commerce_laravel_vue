@@ -1,21 +1,22 @@
 <?php
 namespace App\Application\Handlers\Commands\Product;
 
-use App\Application\Commands\Product\CreateProductCommand;
+use App\Application\Commands\Product\UpdateProductCommand;
 use App\Domain\Product\Repositories\ProductRepositoryInterface;
 use App\Domain\Product\Entities\Product;
 use App\Domain\Product\ValueObjects\Price;
 use App\Domain\Product\ValueObjects\Stock;
 use App\Domain\Product\ValueObjects\Discount;
 
-class CreateProductCommandHandler
+class UpdateProductCommandHandler
 {
-    public function __construct(
-        private ProductRepositoryInterface $productRepository
-    ) {}
+    public function __construct(private ProductRepositoryInterface $productRepository) {}
 
-    public function handle(CreateProductCommand $command): array
+    public function handle(UpdateProductCommand $command): array
     {
+        $existing = $this->productRepository->findById($command->id);
+        if (!$existing) throw new \Exception("Product not found");
+
         $discount = null;
         if ($command->discountPercentage !== null) {
             $validUntil = $command->discountValidUntil ? new \DateTime($command->discountValidUntil) : null;
@@ -23,7 +24,7 @@ class CreateProductCommandHandler
         }
 
         $product = new Product(
-            0,
+            $command->id,
             $command->name,
             $command->description,
             $command->sku,
@@ -32,7 +33,8 @@ class CreateProductCommandHandler
             $command->categoryId,
             $command->brandId,
             $command->images,
-            $discount
+            $discount,
+            $existing->isActive(),
         );
 
         $saved = $this->productRepository->save($product);

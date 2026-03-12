@@ -17,10 +17,7 @@ class EloquentCustomerRepository implements CustomerRepositoryInterface
     public function findById(int $id): ?DomainCustomer
     {
         $customer = $this->model->find($id);
-        if (!$customer) {
-            return null;
-        }
-
+        if (!$customer) return null;
         return $this->toDomainEntity($customer);
     }
 
@@ -41,25 +38,18 @@ class EloquentCustomerRepository implements CustomerRepositoryInterface
             });
         }
 
-        if ($type) {
-            $query->where('type', $type);
-        }
+        if ($type)            $query->where('type', $type);
+        if ($active !== null) $query->where('is_active', $active);
 
-        if ($active !== null) {
-            $query->where('is_active', $active);
-        }
-
-        $total = $query->count();
-        $customers = $query->offset(($page - 1) * $perPage)
-                          ->limit($perPage)
-                          ->get();
+        $total     = $query->count();
+        $customers = $query->offset(($page - 1) * $perPage)->limit($perPage)->get();
 
         return [
-            'data' => $customers->map(fn($customer) => $this->toDomainEntity($customer))->toArray(),
-            'total' => $total,
-            'page' => $page,
-            'per_page' => $perPage,
-            'total_pages' => ceil($total / $perPage)
+            'data'        => $customers->map(fn($c) => $this->toArray($c))->values()->toArray(),
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $perPage,
+            'total_pages' => (int) ceil($total / $perPage),
         ];
     }
 
@@ -68,14 +58,14 @@ class EloquentCustomerRepository implements CustomerRepositoryInterface
         $eloquentCustomer = $this->model->updateOrCreate(
             ['id' => $customer->getId()],
             [
-                'name' => $customer->getName(),
-                'last_name' => $customer->getLastName(),
-                'email' => $customer->getContactInfo()->getEmail(),
-                'phone' => $customer->getContactInfo()->getPhone(),
-                'address' => $customer->getContactInfo()->getAddress(),
-                'type' => $customer->getType()->getValue(),
+                'name'       => $customer->getName(),
+                'last_name'  => $customer->getLastName(),
+                'email'      => $customer->getContactInfo()->getEmail(),
+                'phone'      => $customer->getContactInfo()->getPhone(),
+                'address'    => $customer->getContactInfo()->getAddress(),
+                'type'       => $customer->getType()->getValue(),
                 'birth_date' => $customer->getBirthDate(),
-                'is_active' => $customer->isActive(),
+                'is_active'  => $customer->isActive(),
             ]
         );
 
@@ -85,6 +75,24 @@ class EloquentCustomerRepository implements CustomerRepositoryInterface
     public function delete(int $id): bool
     {
         return $this->model->destroy($id) > 0;
+    }
+
+    private function toArray(EloquentCustomer $c): array
+    {
+        return [
+            'id'         => $c->id,
+            'name'       => $c->name,
+            'last_name'  => $c->last_name,
+            'full_name'  => $c->name . ' ' . $c->last_name,
+            'email'      => $c->email,
+            'phone'      => $c->phone,
+            'address'    => $c->address,
+            'type'       => $c->type,
+            'birth_date' => $c->birth_date,
+            'is_active'  => $c->is_active,
+            'created_at' => $c->created_at,
+            'updated_at' => $c->updated_at,
+        ];
     }
 
     private function toDomainEntity(EloquentCustomer $customer): DomainCustomer

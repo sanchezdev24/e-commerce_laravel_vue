@@ -21,10 +21,10 @@ class EloquentProductRepository implements ProductRepositoryInterface
         if (!$product) {
             return null;
         }
-
         return $this->toDomainEntity($product);
     }
 
+    // Query-side: returns plain arrays (serializable)
     public function findAll(
         ?string $search = null,
         ?int $categoryId = null,
@@ -44,55 +44,42 @@ class EloquentProductRepository implements ProductRepositoryInterface
             });
         }
 
-        if ($categoryId) {
-            $query->where('category_id', $categoryId);
-        }
+        if ($categoryId) $query->where('category_id', $categoryId);
+        if ($brandId)    $query->where('brand_id', $brandId);
+        if ($active !== null) $query->where('is_active', $active);
+        if ($inStock)    $query->where('stock', '>', 0);
 
-        if ($brandId) {
-            $query->where('brand_id', $brandId);
-        }
-
-        if ($active !== null) {
-            $query->where('is_active', $active);
-        }
-
-        if ($inStock !== null && $inStock) {
-            $query->where('stock', '>', 0);
-        }
-
-        $total = $query->count();
-        $products = $query->offset(($page - 1) * $perPage)
-                         ->limit($perPage)
-                         ->get();
+        $total    = $query->count();
+        $products = $query->offset(($page - 1) * $perPage)->limit($perPage)->get();
 
         return [
-            'data' => $products->map(fn($product) => $this->toDomainEntity($product))->toArray(),
-            'total' => $total,
-            'page' => $page,
-            'per_page' => $perPage,
-            'total_pages' => ceil($total / $perPage)
+            'data'        => $products->map(fn($p) => $this->toArray($p))->values()->toArray(),
+            'total'       => $total,
+            'page'        => $page,
+            'per_page'    => $perPage,
+            'total_pages' => (int) ceil($total / $perPage),
         ];
     }
 
     public function save(DomainProduct $product): DomainProduct
     {
         $discount = $product->getDiscount();
-        
+
         $eloquentProduct = $this->model->updateOrCreate(
             ['id' => $product->getId()],
             [
-                'name' => $product->getName(),
-                'description' => $product->getDescription(),
-                'sku' => $product->getSku(),
-                'price' => $product->getPrice()->getValue(),
-                'stock' => $product->getStock()->getQuantity(),
-                'min_stock' => $product->getStock()->getMinQuantity(),
-                'category_id' => $product->getCategoryId(),
-                'brand_id' => $product->getBrandId(),
-                'images' => $product->getImages(),
-                'discount_percentage' => $discount ? $discount->getPercentage() : null,
+                'name'                 => $product->getName(),
+                'description'          => $product->getDescription(),
+                'sku'                  => $product->getSku(),
+                'price'                => $product->getPrice()->getValue(),
+                'stock'                => $product->getStock()->getQuantity(),
+                'min_stock'            => $product->getStock()->getMinQuantity(),
+                'category_id'          => $product->getCategoryId(),
+                'brand_id'             => $product->getBrandId(),
+                'images'               => $product->getImages(),
+                'discount_percentage'  => $discount ? $discount->getPercentage() : null,
                 'discount_valid_until' => $discount ? $discount->getValidUntil() : null,
-                'is_active' => $product->isActive(),
+                'is_active'            => $product->isActive(),
             ]
         );
 
@@ -104,10 +91,36 @@ class EloquentProductRepository implements ProductRepositoryInterface
         return $this->model->destroy($id) > 0;
     }
 
+    private function toArray(EloquentProduct $product): array
+    {
+        return [
+            'id'                   => $product->id,
+            'name'                 => $product->name,
+            'description'          => $product->description,
+            'sku'                  => $product->sku,
+            'price'                => (float) $product->price,
+            'final_price'          => (float) $product->final_price,
+            'stock'                => $product->stock,
+            'min_stock'            => $product->min_stock,
+            'category_id'          => $product->category_id,
+            'brand_id'             => $product->brand_id,
+            'category'             => $product->category?->toArray(),
+            'brand'                => $product->brand?->toArray(),
+            'images'               => $product->images ?? [],
+            'discount_percentage'  => $product->discount_percentage,
+            'discount_valid_until' => $product->discount_valid_until,
+            'is_active'            => $product->is_active,
+            'in_stock'             => $product->isInStock(),
+            'is_low_stock'         => $product->isLowStock(),
+            'created_at'           => $product->created_at,
+            'updated_at'           => $product->updated_at,
+        ];
+    }
+
     private function toDomainEntity(EloquentProduct $product): DomainProduct
     {
-        $price = new Price($product->price);
-        $stock = new Stock($product->stock, $product->min_stock);
+        $price    = new Price($product->price);
+        $stock    = new Stock($product->stock, $product->min_stock);
         $discount = null;
 
         if ($product->discount_percentage) {

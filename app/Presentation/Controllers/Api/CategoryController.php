@@ -17,7 +17,7 @@ class CategoryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = new GetCategoriesQuery(
-            $request->boolean('active'),
+            true,
             $request->integer('parent_id')
         );
 
