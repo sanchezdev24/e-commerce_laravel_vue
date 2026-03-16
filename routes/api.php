@@ -7,7 +7,7 @@ use App\Presentation\Controllers\Api\CustomerController;
 use App\Presentation\Controllers\Api\ProductController;
 use App\Presentation\Controllers\Api\CategoryController;
 use App\Presentation\Controllers\Api\BrandController;
-use App\Presentation\Controllers\Api\SaleController;
+//use App\Presentation\Controllers\Api\SaleController;
 use App\Presentation\Controllers\Api\DashboardController;
 
 // Authentication routes
@@ -39,6 +39,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('brands', BrandController::class);
     
     // Sales
-    Route::apiResource('sales', SaleController::class);
-    Route::get('sales/customer/{customer}', [SaleController::class, 'getByCustomer']);
+    /* Route::apiResource('sales', SaleController::class);
+    Route::get('sales/customer/{customer}', [SaleController::class, 'getByCustomer']); */
 });
