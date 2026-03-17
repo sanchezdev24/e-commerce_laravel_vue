@@ -21,6 +21,12 @@ Route::prefix('auth')->group(function () {
     });
 });
 
+// Products
+Route::apiResource('products', ProductController::class);
+
+// Categories
+Route::apiResource('categories', CategoryController::class);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
@@ -29,11 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Customers
     Route::apiResource('customers', CustomerController::class);
     
-    // Products
-    Route::apiResource('products', ProductController::class);
-    
-    // Categories
-    Route::apiResource('categories', CategoryController::class);
     
     // Brands
     Route::apiResource('brands', BrandController::class);
